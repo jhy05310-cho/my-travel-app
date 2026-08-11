@@ -1,0 +1,95 @@
+{
+  "$comment": "hooks.json 은 참조용 분리 파일이다. Claude Code 가 실제로 읽는 훅 설정 위치는 이 settings.json 의 hooks 키다. 아래 hooks 블록은 .claude/hooks.json 과 동일한 내용을 인라인한 것이다. 플러그인으로 배포할 때는 hooks.json 이 그대로 <plugin>/hooks/hooks.json 이 된다. 출처: https://code.claude.com/docs/en/hooks , https://code.claude.com/docs/en/plugins",
+
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/id_rsa*)",
+      "Read(./**/credentials.json)",
+      "Read(./.aws/**)",
+      "Read(./.ssh/**)",
+      "Write(./.env)",
+      "Write(./.env.*)",
+      "Write(./secrets/**)",
+      "Edit(./.env)",
+      "Edit(./.env.*)",
+      "Edit(./secrets/**)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(curl * | bash*)",
+      "Bash(curl * | sh*)",
+      "Bash(wget * | bash*)",
+      "Bash(wget * | sh*)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(npm publish*)",
+      "Bash(docker*)",
+      "Bash(rm -rf*)"
+    ],
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(npm run lint*)",
+      "Bash(npm run typecheck*)",
+      "Bash(npm test*)"
+    ]
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-bash.sh",
+            "timeout": 10,
+            "statusMessage": "Bash 보안 가드 검사 중"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-secrets.sh",
+            "timeout": 10,
+            "statusMessage": "비밀정보 경로 검사 중"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-gate.sh",
+            "timeout": 600,
+            "statusMessage": "완료 전 검증 게이트 실행 중"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-gate.sh",
+            "timeout": 600,
+            "statusMessage": "서브에이전트 검증 게이트"
+          }
+        ]
+      }
+    ]
+  }
+}
